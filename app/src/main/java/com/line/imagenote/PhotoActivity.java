@@ -13,7 +13,7 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
-import com.line.imagenote.db.DBHandler;
+import com.line.imagenote.db.DBHelper;
 
 import java.util.ArrayList;
 
@@ -21,10 +21,9 @@ public class PhotoActivity extends AppCompatActivity {
     private static final String TAG = "PhotoActivity";
 
     ImageView img_photo;
-    private DBHandler databaseHandler;
-    private int position;
-    private int noteId;
-    private ArrayList photoList;
+    private DBHelper databaseHandler;
+    private int photoId;
+    private long noteId;
 
 
     @Override
@@ -32,27 +31,17 @@ public class PhotoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
 
-        databaseHandler = new DBHandler(getApplicationContext());
+        databaseHandler = new DBHelper(getApplicationContext());
 
         // 툴바에 backButton을 나타내주고, 제목은 없애준다.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
 
-        // intent 값을 받아온다.
-        noteId = getIntent().getIntExtra("noteId", 0);
-        Log.d(TAG, "onCreate: " + noteId);
-        position = getIntent().getIntExtra("position", 0);
-        Log.d(TAG, "onCreate: " + position);
-        photoList = getIntent().getStringArrayListExtra("photoList");
-        Log.d(TAG, "onCreate: " + photoList);
-
-        Log.d(TAG, "onCreate: " + photoList.get(position));
-
         // 이미지를 넣어준다.
         img_photo = findViewById(R.id.img_photo);
         Glide.with(this)
-                .load(photoList.get(position))
+                .load(getIntent().getStringExtra("uri"))
                 .into(img_photo);
 
     }
@@ -98,13 +87,8 @@ public class PhotoActivity extends AppCompatActivity {
                 .setMessage(getString(R.string.confirm_delete_photo))
                 .setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        photoList.remove(position);
-                        Log.d(TAG, "onClick: " + photoList);
-                        databaseHandler.deletePhoto(noteId, photoList.toString());
 
-                        Intent resultIntent = new Intent();
-                        resultIntent.putExtra("deleteNo", position);
-                        setResult(RESULT_OK, resultIntent);
+                        databaseHandler.deleteAttachment(getIntent().getIntExtra("photoId", 0));
                         finish();
 
                     }

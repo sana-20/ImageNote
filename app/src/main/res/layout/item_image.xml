@@ -12,4 +12,5 @@
         android:scaleType="fitXY"
         android:adjustViewBounds="true"
         android:id="@+id/imageView" />
+
 </LinearLayout>

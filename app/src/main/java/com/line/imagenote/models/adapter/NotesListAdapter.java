@@ -1,6 +1,7 @@
 package com.line.imagenote.models.adapter;
 
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.line.imagenote.R;
+import com.line.imagenote.db.DBHelper;
+import com.line.imagenote.models.Attachment;
+import com.line.imagenote.models.Note;
 import com.line.imagenote.models.NoteItem;
 
 import java.util.ArrayList;
@@ -20,15 +24,16 @@ public class NotesListAdapter extends RecyclerView.Adapter<NotesListAdapter.Note
     private static final String TAG = "NotesListAdapter";
 
     private Context mContext;
-    private ArrayList<NoteItem> mNotesList;
+    private ArrayList<Note> mNotesList;
     private NotesListListener listener;
+    private DBHelper databaseHandler;
 
     public interface NotesListListener {
         void onNoteClicked(int position);
     }
 
 
-    public NotesListAdapter(Context context, ArrayList<NoteItem> notesList, NotesListListener listener) {
+    public NotesListAdapter(Context context, ArrayList<Note> notesList, NotesListListener listener) {
         this.mContext = context;
         this.mNotesList = notesList;
         this.listener = listener;
@@ -65,18 +70,23 @@ public class NotesListAdapter extends RecyclerView.Adapter<NotesListAdapter.Note
         holder.mTitle.setText(mNotesList.get(position).getTitle());
         holder.mNote.setText(mNotesList.get(position).getContent());
 
-        ArrayList photoList = mNotesList.get(position).getPhotoList();
-        if(photoList.isEmpty()){
-            holder.mImage.setVisibility(View.GONE);
-        }
-        else{
-            String imageUrl = mNotesList.get(position).getPhotoList().get(0);
-            Log.d(TAG, "onBindViewHolder: "+ imageUrl);
+        Log.d(TAG, "onBindViewHolder: " + mNotesList.get(position).getTimeCreated());
 
+        databaseHandler = new DBHelper(mContext);
+        String imageUri = databaseHandler.getThumbnail(mNotesList.get(position).getTimeCreated());
+        Log.d(TAG, "onBindViewHolder: " + imageUri);
+
+        if(!imageUri.equals("")){
+            Log.d(TAG, "onBindViewHolder: 보여라");
             Glide.with(mContext)
-                    .load(imageUrl)
+                    .load(imageUri)
                     .centerCrop()
                     .into(holder.mImage);
+            holder.mImage.setVisibility(View.VISIBLE);
+        }
+        else{
+            Log.d(TAG, "onBindViewHolder: 안보인다");
+            holder.mImage.setVisibility(View.GONE);
         }
 
 

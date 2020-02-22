@@ -7,6 +7,7 @@ public class NoteItem {
     private String title;
     private String content;
     private String time;
+
     private ArrayList<String> photoList;
 
     public NoteItem(int id, String title, String content, String time, ArrayList<String> photoList) {

@@ -4,8 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.line.imagenote.db.DBHandler;
-import com.line.imagenote.models.NoteItem;
+import com.line.imagenote.db.DBHelper;
+import com.line.imagenote.models.Note;
 import com.line.imagenote.models.adapter.NotesListAdapter;
 
 import androidx.annotation.NonNull;
@@ -28,9 +28,8 @@ public class NotesListActivity extends AppCompatActivity implements NotesListAda
     private FloatingActionButton fab;
 
     private NotesListAdapter notesListAdapter;
-    private ArrayList<NoteItem> notesList;
-//    DatabaseHandler databaseHandler;
-    DBHandler databaseHandler;
+    private ArrayList<Note> notesList;
+    DBHelper databaseHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +50,7 @@ public class NotesListActivity extends AppCompatActivity implements NotesListAda
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(NotesListActivity.this, NoteActivity.class);
-                intent.putExtra("isCreate", true);
+                intent.putExtra("isUpdate", false);
                 startActivity(intent);
             }
         });
@@ -71,7 +70,7 @@ public class NotesListActivity extends AppCompatActivity implements NotesListAda
     }
 
     private void showNotesList() {
-        databaseHandler = new DBHandler(this);
+        databaseHandler = new DBHelper(this);
         notesList = databaseHandler.getAllNotes(); // SQLite에서 데이터를 가져온다.
         notesListAdapter = new NotesListAdapter(this, notesList,this);
         recycler_notes.setAdapter(notesListAdapter);
@@ -90,7 +89,6 @@ public class NotesListActivity extends AppCompatActivity implements NotesListAda
         recycler_notes = findViewById(R.id.recycler_notes);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(NotesListActivity.this);
         recycler_notes.setLayoutManager(linearLayoutManager);
-
 
         recycler_notes.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
@@ -114,11 +112,11 @@ public class NotesListActivity extends AppCompatActivity implements NotesListAda
 
     @Override
     public void onNoteClicked(int position) {
-        int id = notesList.get(position).getId();
-        Log.d(TAG, "onNoteClicked: " + id );
+        long noteId = notesList.get(position).getTimeCreated();
+        Log.d(TAG, "onNoteClicked: " + noteId );
         Intent intent = new Intent(NotesListActivity.this, NoteActivity.class);
-        intent.putExtra("noteId", id);
-        intent.putExtra("isCreate", false);
+        intent.putExtra("noteId", noteId);
+        intent.putExtra("isUpdate", true);
         startActivity(intent);
     }
 }

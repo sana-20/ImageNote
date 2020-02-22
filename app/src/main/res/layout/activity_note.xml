@@ -37,27 +37,27 @@
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <RelativeLayout
-                android:id="@+id/layout_image"
+
+            <androidx.viewpager.widget.ViewPager
+                android:id="@+id/view_pager"
                 android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <com.tbuonomo.viewpagerdotsindicator.WormDotsIndicator
+                android:id="@+id/worm_dots_indicator"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="8dp">
+                android:layout_gravity="center"
+                app:dotsColor="@color/colorPrimaryDark"
+                app:dotsCornerRadius="8dp"
+                app:dotsSize="16dp"
+                app:dotsSpacing="4dp"
+                app:dotsStrokeColor="@color/colorPrimaryDark"
+                app:dotsStrokeWidth="2dp"
 
-                <androidx.viewpager.widget.ViewPager
-                    android:id="@+id/view_pager"
-                    android:layout_width="match_parent"
-                    android:layout_height="240dp"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:id="@+id/SliderDots"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/view_pager"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:orientation="horizontal" />
-
-            </RelativeLayout>
+                />
 
             <EditText
                 android:id="@+id/et_content"

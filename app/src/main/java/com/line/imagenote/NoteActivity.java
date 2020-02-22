@@ -13,11 +13,13 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
@@ -32,9 +34,12 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.line.imagenote.db.DBHandler;
-import com.line.imagenote.models.NoteItem;
+import com.line.imagenote.db.DBHelper;
+import com.line.imagenote.models.Attachment;
+import com.line.imagenote.models.Note;
 import com.line.imagenote.models.adapter.ViewPagerAdapter;
+import com.tbuonomo.viewpagerdotsindicator.DotsIndicator;
+import com.tbuonomo.viewpagerdotsindicator.WormDotsIndicator;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,21 +47,22 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Objects;
 
-public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.PhotoListener {
+public class NoteActivity extends AppCompatActivity {
     private static final String TAG = "NoteActivity";
 
-    private DBHandler databaseHandler;
+    private DBHelper databaseHandler;
     private EditText et_title, et_content;
 
     private boolean updatePhoto;
 
     // 원래 메모 내용
     private String title, content;
-    private int noteId;
-    private boolean isCreate;
+    private long noteId;
+    private boolean isUpdate;
 
     private AlertDialog dialog;
 
@@ -65,13 +71,9 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
     // 이미지
     ViewPager viewPager;
     ViewPagerAdapter adapter;
-    RelativeLayout relativeLayout;
+    WormDotsIndicator dotsIndicator;
 
-    LinearLayout sliderDotspanel;
-    private int dotscount;
-    private ImageView[] dots;
-
-    private ArrayList<String> photoList;
+    private ArrayList<Attachment> photoList;
 
 
     @Override
@@ -83,19 +85,19 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
         Log.d(TAG, "onCreate: ");
 
         // sqlite의 id값을 받아온다.
-        noteId = getIntent().getIntExtra("noteId", 0);
-        isCreate = getIntent().getBooleanExtra("isCreate", false);
-        Log.d(TAG, "onCreate: " + noteId + isCreate);
+        isUpdate = getIntent().getBooleanExtra("isUpdate", false);
+        Log.d(TAG, "onCreate: " + noteId + isUpdate);
 
-        databaseHandler = new DBHandler(getApplicationContext());
+        if (!isUpdate) {
+            noteId = Calendar.getInstance().getTimeInMillis();
+        } else {
+            noteId = getIntent().getLongExtra("noteId", 0);
+        }
+
+        databaseHandler = new DBHelper(getApplicationContext());
 
         initViews();
 
-        //TODO: onResume에 넣어야 하나??
-        if (!isCreate) {
-            Log.e(TAG, "onCreate: 2");
-            getNote();
-        }
 
     }
 
@@ -110,109 +112,72 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
 
         // 메모의 이미지
         viewPager = findViewById(R.id.view_pager);
-        photoList = new ArrayList<>();
-        Log.d(TAG, "initViews: " + photoList);
-
-        relativeLayout = findViewById(R.id.layout_image);
 
     }
 
-
-    private void createDots() {
-
-        sliderDotspanel = findViewById(R.id.SliderDots);
-
-        dotscount = adapter.getCount();
-        dots = new ImageView[dotscount];
-
-        for (int i = 0; i < dotscount; i++) {
-
-            dots[i] = new ImageView(this);
-            dots[i].setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.nonactive_dot));
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-
-            params.setMargins(8, 0, 8, 0);
-
-            sliderDotspanel.addView(dots[i], params);
-
-        }
-
-        dots[0].setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.active_dot));
-
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-
-                for (int i = 0; i < dotscount; i++) {
-                    dots[i].setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.nonactive_dot));
-                }
-
-                dots[position].setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.active_dot));
-
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
-    }
 
     @Override
     protected void onStart() {
         super.onStart();
         Log.d(TAG, "onStart: ");
-        Log.e(TAG, "onStart: " );
+        Log.e(TAG, "onStart: ");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume: ");
-        Log.e(TAG, "onResume: " );
+        Log.e(TAG, "onResume: ");
 
+        photoList = new ArrayList<>();
+
+        //TODO: onResume에 넣어야 하나??
+        if (isUpdate) {
+            Log.e(TAG, "onCreate: 2");
+            getNote();
+        }
 
         //TODO: onResume에 넣어야 함!!!
-        adapter = new ViewPagerAdapter(this, photoList, this);
+         dotsIndicator =  findViewById(R.id.worm_dots_indicator);
+
+        adapter = new ViewPagerAdapter(this, photoList, noteId);
         viewPager.setAdapter(adapter);
+
+        dotsIndicator.setViewPager(viewPager);
+
         adapter.notifyDataSetChanged();
 
 
-//       createDots();
-
         if (photoList.isEmpty()) {
-            relativeLayout.setVisibility(View.GONE);
+            viewPager.setVisibility(View.GONE);
+            dotsIndicator.setVisibility(View.GONE);
         } else {
-            relativeLayout.setVisibility(View.VISIBLE);
+            viewPager.setVisibility(View.VISIBLE);
+            dotsIndicator.setVisibility(View.VISIBLE);
         }
 
     }
-
 
 
     @Override
     protected void onStop() {
         super.onStop();
         Log.d(TAG, "onStop: ");
-        Log.e(TAG, "onStop: " );
+        Log.e(TAG, "onStop: ");
     }
 
 
     // 이미 생성된 메모를 보거나 편집하려는 경우 SQLite에서 메모를 가져온다.
     private void getNote() {
-        Log.e(TAG, "getNote: " );
+        Log.e(TAG, "getNote: ");
         Log.d(TAG, "getNote: ");
-        NoteItem noteItem = databaseHandler.getNoteById(noteId);
+        Note noteItem = databaseHandler.getNoteById(noteId);
         title = noteItem.getTitle();
         content = noteItem.getContent();
 
-        photoList = noteItem.getPhotoList();
+        Log.d(TAG, "initViews: " + photoList);
+
+        photoList = databaseHandler.getAttachments(noteId, "image");
         Log.d(TAG, "getNote: " + photoList);
         Log.e(TAG, "getNote: " + photoList);
 
@@ -224,7 +189,7 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
     @Override
     public void onRestart() {
         super.onRestart();
-        Log.e(TAG, "onRestart: " );
+        Log.e(TAG, "onRestart: ");
         Log.d(TAG, "onRestart: ");
 //        content = et_content.getText().toString().trim();
 //        if (getCurrentFocus() != null)
@@ -233,7 +198,7 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
 
     @Override
     public void onPause() {
-        Log.e(TAG, "onPause: " );
+        Log.e(TAG, "onPause: ");
         Log.d(TAG, "onPause: ");
         if (!isChangingConfigurations()) {
             saveNote();
@@ -249,7 +214,7 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        Log.e(TAG, "onBackPressed: " );
+        Log.e(TAG, "onBackPressed: ");
     }
 
 
@@ -357,16 +322,16 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
         alertDialog.show();
     }
 
-    @Override
-    public void onPhotoClicked(int position) {
-        Intent intent = new Intent(this, PhotoActivity.class);
-
-        intent.putExtra("noteId", noteId);
-        intent.putExtra("position", position);
-        intent.putExtra("photoList", photoList);
-        startActivityForResult(intent, REQUEST_IMAGE_DELETE);
-
-    }
+//    @Override
+//    public void onPhotoClicked(int position) {
+//        Intent intent = new Intent(this, PhotoActivity.class);
+//
+//        intent.putExtra("noteId", noteId);
+//        intent.putExtra("position", position);
+//        intent.putExtra("photoList", photoList);
+//        startActivityForResult(intent, REQUEST_IMAGE_DELETE);
+//
+//    }
 
     private class CheckImage extends AsyncTask<String, Void, Void> {
         boolean isImage;
@@ -375,17 +340,17 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            alertDialog.dismiss();
 
             if (isImage) {
-                photoList.add(stringURL);
-                updatePhoto = true;
-                adapter.notifyDataSetChanged();
+                databaseHandler.insertAttachment(noteId, stringURL, "image");
+                onResume();
+
             } else {
                 Toast.makeText(NoteActivity.this, R.string.message_url_error, Toast.LENGTH_SHORT).show();
 
             }
 
-            alertDialog.dismiss();
         }
 
         @Override
@@ -441,7 +406,7 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
                         BuildConfig.APPLICATION_ID + ".provider", photoFile);
 
                 String url = photoURI.toString();
-                photoList.add(url);
+                databaseHandler.insertAttachment(noteId, url, "image");
 
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
@@ -479,20 +444,17 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
                 case REQUEST_TAKE_PHOTO:
-                    updatePhoto = true;
-                    Log.e(TAG, "onActivityResult: " );
+                    Log.e(TAG, "onActivityResult: ");
                     break;
 
                 case REQUEST_IMAGE_GET:
-                    updatePhoto = true;
                     try {
                         // 사진 데이터의 Uri를 가져온다.
                         Uri uri = data.getData();
-                        String url = uri.toString();
+                        String url = getRealPath(uri);
                         Log.d(TAG, "onActivityResult: " + uri);
-                        Log.e(TAG, "onActivityResult: " );
-
-                        photoList.add(url);
+                        Log.e(TAG, "onActivityResult: " + url);
+                        databaseHandler.insertAttachment(noteId, url, "image");
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -501,7 +463,6 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
                     break;
 
                 case REQUEST_IMAGE_DELETE:
-                    updatePhoto=true;
                     int deleteNo = data.getIntExtra("deleteNo", 0);
                     photoList.remove(deleteNo);
                     break;
@@ -510,9 +471,39 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
         }
     }
 
+    /**
+     * 이미지 데이터의 uri로부터 파일경로를 얻는 메소드이다.
+     *
+     * @ param Uri 이미지주소
+     * @ return String 파일경로
+     * 참고 https://stackoverflow.com/questions/13209494/how-to-get-the-full-file-path-from-uri
+     * api 레벨마다 경로 얻는 방법이 다름
+     */
+    private String getRealPath(Uri uri) {
+        String filePath = "";
+        String wholeID = DocumentsContract.getDocumentId(uri);
+
+        String id = wholeID.split(":")[1];
+
+        String[] column = {MediaStore.Images.Media.DATA};
+
+        // where id is equal to
+        String sel = MediaStore.Images.Media._ID + "=?";
+
+        Cursor cursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                column, sel, new String[]{id}, null);
+
+        int columnIndex = cursor.getColumnIndex(column[0]);
+
+        if (cursor.moveToFirst()) {
+            filePath = cursor.getString(columnIndex);
+        }
+        cursor.close();
+        return filePath;
+    }
 
     private void saveNote() {
-        Log.e(TAG, "saveNote: " );
+        Log.e(TAG, "saveNote: ");
         Log.d(TAG, "saveNote: 노트 저장");
         // 현재 제목과 내용을 가져온다.
         String newTitle = et_title.getText().toString().trim().replace("/", " ");
@@ -534,16 +525,13 @@ public class NoteActivity extends AppCompatActivity implements ViewPagerAdapter.
             newTitle = "빈 제목";
         }
 
-        if (isCreate) {
-            Log.d(TAG, "saveNote: 최초 저장");
-            // 제목이 변경되었거나 비었을 경우, 자동으로 제목을 생성해준다.
-            databaseHandler.insertNote(newTitle, newContent, photoList.toString());
-            Log.d(TAG, "saveNote: photoList.toString " + photoList.toString());
+        Note note;
+        if (isUpdate) {
+            note = new Note(noteId, Calendar.getInstance().getTimeInMillis(), newTitle, newContent);
         } else {
-            Log.d(TAG, "saveNote: 메모 편집");
-            databaseHandler.updateNote(noteId, newTitle, newContent, photoList.toString());
-            Log.d(TAG, "saveNote: photoList.toString " + photoList.toString());
+            note = new Note(noteId, noteId, newTitle, newContent);
         }
+        databaseHandler.insertNote(note, isUpdate);
 
     }
 
