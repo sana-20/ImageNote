@@ -1,0 +1,38 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.line.imagenote.NoteActivity">
+
+
+    <item
+        android:id="@+id/btn_photo"
+        android:icon="@drawable/ic_add_circle_white_24dp"
+        android:title="@string/photo"
+        app:showAsAction="always">
+        <menu>
+            <group>
+
+                <item
+                    android:id="@+id/item_camera"
+                    android:title="@string/camera" />
+
+                <item
+                    android:id="@+id/item_gallery"
+                    android:title="@string/gallery" />
+
+                <item
+                    android:id="@+id/item_url"
+                    android:title="@string/url" />
+            </group>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/btn_delete"
+        android:icon="@drawable/ic_delete_white_24dp"
+        android:title="@string/delete"
+        app:showAsAction="always" />
+
+
+
+</menu>
