@@ -117,7 +117,6 @@ public class NotesListActivity extends AppCompatActivity implements NotesListLis
         return true;
     }
 
-
     @Override
     protected void onResume() {
         super.onResume();

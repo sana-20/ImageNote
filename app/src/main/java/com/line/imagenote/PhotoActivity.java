@@ -14,11 +14,6 @@ import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 import com.line.imagenote.db.DBHelper;
-import com.line.imagenote.models.Attachment;
-import com.line.imagenote.models.Note;
-
-import java.util.ArrayList;
-import java.util.Calendar;
 
 /**
  * 노트에 첨부된 이미지 파일을 원본으로 보고, 삭제할 수 있다.

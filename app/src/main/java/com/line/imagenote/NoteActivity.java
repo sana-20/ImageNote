@@ -39,7 +39,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Objects;
 
@@ -85,7 +84,7 @@ public class NoteActivity extends AppCompatActivity implements PhotoListener {
 
         if (!isUpdate) {
             // 노트를 최초 생성하는 경우, noteId를 현재 시간으로 설정해준다.
-            noteId = Calendar.getInstance().getTimeInMillis();
+            noteId = databaseHandler.getTime();
         } else {
             // 노트를 편집하는 경우, 기존의 noteId를 받아온다.
             noteId = getIntent().getLongExtra("noteId", 0);
@@ -465,8 +464,9 @@ public class NoteActivity extends AppCompatActivity implements PhotoListener {
         }
 
         Note note;
+        Long currentTime = databaseHandler.getTime();
         if (isUpdate) {
-            note = new Note(noteId, Calendar.getInstance().getTimeInMillis(), newTitle, newContent);
+            note = new Note(noteId, currentTime, newTitle, newContent);
         } else {
             note = new Note(noteId, noteId, newTitle, newContent);
         }

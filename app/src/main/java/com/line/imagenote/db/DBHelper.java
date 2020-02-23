@@ -42,6 +42,15 @@ public class DBHelper extends SQLiteOpenHelper {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
+
+     private static DBHelper instance = null;
+    public static synchronized DBHelper getInstance (Context context) {
+        if (instance == null) {
+            instance = new DBHelper(context);
+        }
+        return instance;
+    }
+
     @Override
     public void onCreate(SQLiteDatabase db) {
         String CREATE_NOTES = "CREATE TABLE " + TABLE_NOTES + "("
@@ -107,6 +116,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         }
         cursor.close();
+
         return notesList;
     }
 
@@ -150,6 +160,16 @@ public class DBHelper extends SQLiteOpenHelper {
 
         db.close();
     }
+
+    /**
+     * 모든 노트를 삭제한다.
+     */
+    public void deleteAllNotes() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(TABLE_NOTES, null, null);
+        db.close();
+    }
+
 
     /**
      * 노트 안에 첨부파일을 추가한다.
@@ -236,6 +256,17 @@ public class DBHelper extends SQLiteOpenHelper {
         db.delete(TABLE_ATTACHMENT, COLUMN_ATTACHMENT_ID + " = ?", new String[]{String.valueOf(fileId)});
         db.close();
     }
+
+
+
+    /**
+     * 현재 시간을 가져온다.
+     */
+    public Long getTime(){
+        Long currentTime = Calendar.getInstance().getTimeInMillis();
+        return currentTime;
+    }
+
 
 
 }
