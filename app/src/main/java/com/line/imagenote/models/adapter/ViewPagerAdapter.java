@@ -14,7 +14,7 @@ import com.line.imagenote.NoteActivity;
 import com.line.imagenote.PhotoActivity;
 import com.line.imagenote.R;
 import com.line.imagenote.models.Attachment;
-import com.tbuonomo.viewpagerdotsindicator.DotsIndicator;
+import com.line.imagenote.models.listener.PhotoListener;
 
 import java.util.ArrayList;
 
@@ -22,21 +22,14 @@ public class ViewPagerAdapter extends PagerAdapter {
 
     private Context context;
     private ArrayList<Attachment> photoList;
-    private long noteId;
-//    private PhotoListener listener;
-//
-//    public interface PhotoListener {
-//        void onPhotoClicked(int position);
-//    }
+    PhotoListener listener;
 
 
-    public ViewPagerAdapter(NoteActivity context, ArrayList<Attachment> photoList, long noteId) {
+    public ViewPagerAdapter(NoteActivity context, ArrayList<Attachment> photoList, PhotoListener listener) {
         this.context = context;
         this.photoList = photoList;
-        this.noteId = noteId;
-//        this.listener = listener;
+        this.listener = listener;
     }
-
 
     @Override
     public boolean isViewFromObject(View view, Object object) {
@@ -57,12 +50,7 @@ public class ViewPagerAdapter extends PagerAdapter {
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(context, PhotoActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-                intent.putExtra("noteId", noteId);
-                intent.putExtra("photoId", photoList.get(position).getPhotoId());
-                intent.putExtra("uri", photoList.get(position).getUri());
-                context.startActivity(intent);
+                listener.onPhotoClicked(position);
             }
         });
 
@@ -70,21 +58,17 @@ public class ViewPagerAdapter extends PagerAdapter {
 
         Glide.with(view)
                 .load(photoList.get(position).getUri())
+                .fitCenter()
                 .into(imageView);
 
         ViewPager vp = (ViewPager) container;
         vp.addView(view, 0);
 
-
-
-
         return view;
-
     }
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
         container.removeView((View) object);
-
     }
 }

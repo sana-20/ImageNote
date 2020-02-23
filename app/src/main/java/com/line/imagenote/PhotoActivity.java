@@ -14,43 +14,50 @@ import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 import com.line.imagenote.db.DBHelper;
+import com.line.imagenote.models.Attachment;
+import com.line.imagenote.models.Note;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
+/**
+ * 노트에 첨부된 이미지 파일을 원본으로 보고, 삭제할 수 있다.
+ */
 public class PhotoActivity extends AppCompatActivity {
     private static final String TAG = "PhotoActivity";
 
-    ImageView img_photo;
+    private ImageView img_photo;
     private DBHelper databaseHandler;
+
     private int photoId;
     private long noteId;
-
+    private String imagePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
 
-        databaseHandler = new DBHelper(getApplicationContext());
-
-        // 툴바에 backButton을 나타내주고, 제목은 없애준다.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
 
+        // NoteActivity에서 이미지 관련 데이터를 넘겨받아 변수에 넣어준다.
+        photoId = getIntent().getIntExtra("photoId", 0);
+        noteId = getIntent().getLongExtra("noteId", 0);
+        imagePath = getIntent().getStringExtra("imagePath");
+
         // 이미지를 넣어준다.
         img_photo = findViewById(R.id.img_photo);
         Glide.with(this)
-                .load(getIntent().getStringExtra("uri"))
+                .load(imagePath)
                 .into(img_photo);
-
     }
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -87,8 +94,13 @@ public class PhotoActivity extends AppCompatActivity {
                 .setMessage(getString(R.string.confirm_delete_photo))
                 .setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
+                        databaseHandler = new DBHelper(getApplicationContext());
 
-                        databaseHandler.deleteAttachment(getIntent().getIntExtra("photoId", 0));
+                        databaseHandler.deleteAttachment(photoId);
+
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("updatePhoto", true);
+                        setResult(RESULT_OK, resultIntent);
                         finish();
 
                     }
